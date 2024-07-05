@@ -7,7 +7,7 @@
 import torch
 from torch.utils.data import Dataset, DataLoader
 from datasets import load_dataset
-
+from tqdm import tqdm
 
 # In[14]:
 
@@ -132,20 +132,23 @@ optimizer = torch.optim.Adam(model.parameters())
 for epoch in range(750):
 
 	running_loss = 0.0
-	for i, data in enumerate(dataloader):
-		inputs, labels = data
-		inputs, labels = inputs.to(device), labels.to(device)
+    with tqdm(total=len(dataloader), desc=f'Epoch {epoch+1}/750', unit='batch') as pbar:
+	    for i, data in enumerate(dataloader):
+		    inputs, labels = data
+		    inputs, labels = inputs.to(device), labels.to(device)
 
-		optimizer.zero_grad()
+		    optimizer.zero_grad()
 
-		outputs, hn = model(inputs)
-		loss = loss_fn(outputs.squeeze(0), labels.squeeze(0))
-		loss.backward()
-		optimizer.step()
+		    outputs, hn = model(inputs)
+		    loss = loss_fn(outputs.squeeze(0), labels.squeeze(0))
+		    loss.backward()
+		    optimizer.step()
 
-		running_loss += loss.item()
+		    running_loss += loss.item()
+            pbar.set_postfix(loss=running_loss/len(dataloader))
+            pbar.update(1)
 	
-	print(f'\r {running_loss/len(dataloader)}', end='', flush=True)
+	#print(f'\r {running_loss/len(dataloader)}', end='', flush=True)
 
 print('\nFinished Training')
 
