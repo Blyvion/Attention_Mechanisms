@@ -70,10 +70,11 @@ def get_data(MAX_SEQ_LEN, shuffle, BATCH_SIZE):
 			idxs.append(vietnamese_dict[token])
 		vietnamese.append(idxs)
 
-	vietnamese = torch.tensor(vietnamese)
-	english = torch.tensor(english)
+	reps = 1000
+	vietnamese = torch.tensor(vietnamese*reps)
+	english = torch.tensor(english*reps)
 
-	return DataLoader(EN_VN_dataset(english, vietnamese), shuffle=shuffle, batch_size=BATCH_SIZE)
+	return DataLoader(EN_VN_dataset(english, vietnamese), shuffle=shuffle, batch_size=BATCH_SIZE, drop_last=True)
 
 def decode(lang, input):
 	# decode input to lang
@@ -114,13 +115,15 @@ def decode(lang, input):
 	english_dict = {v: k for k, v in english_dict.items()}
 	vietnamese_dict = {v: k for k, v in vietnamese_dict.items()}
 
-	output = []
-	for idx in input:
-		if lang == "english":
-			lang_dict = english_dict
-		elif lang == "vietnamese":
-			lang_dict = vietnamese_dict
+	batch = []
+	for entry in input:
+		output = []
+		for idx in entry:
+			if lang == "english":
+				lang_dict = english_dict
+			elif lang == "vietnamese":
+				lang_dict = vietnamese_dict
 		
-		output.append(lang_dict[idx])
-	
-	return " ".join(output)
+			output.append(lang_dict[idx])
+		batch.append(" ".join(output))
+	return batch

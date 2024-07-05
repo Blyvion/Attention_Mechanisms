@@ -13,12 +13,14 @@ from tqdm import tqdm
 
 
 MAX_SEQ_LENGTH = 10
-BATCH_SIZE = 1
+BATCH_SIZE = 64
+num_epochs = 15
 EMBEDDING_SIZE = 128
 HIDDEN_SIZE = 64
 ENGLISH_VOCAB_SIZE = 25
 FRENCH_VOCAB_SIZE = 25
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+#device='cpu'
 print(device)
 
 
@@ -129,10 +131,10 @@ optimizer = torch.optim.Adam(model.parameters())
 # In[21]:
 
 
-for epoch in range(750):
+for epoch in range(num_epochs):
 
 	running_loss = 0.0
-	with tqdm(total=len(dataloader), desc=f'Epoch {epoch+1}/750', unit='batch') as pbar:
+	with tqdm(total=len(dataloader), desc=f'Epoch {epoch+1}/{num_epochs}', unit='batch', ncols=100) as pbar:
 		for i, data in enumerate(dataloader):
 			inputs, labels = data
 			inputs, labels = inputs.to(device), labels.to(device)
@@ -140,12 +142,13 @@ for epoch in range(750):
 			optimizer.zero_grad()
 
 			outputs, hn = model(inputs)
-			loss = loss_fn(outputs.squeeze(0), labels.squeeze(0))
+			outputs=outputs.permute(0,2,1)
+			loss = loss_fn(outputs, labels)
 			loss.backward()
 			optimizer.step()
 
 			running_loss += loss.item()
-			pbar.set_postfix(loss=running_loss/len(dataloader))
+			pbar.set_postfix(loss=f'{running_loss/len(dataloader):.4f}')
 			pbar.update(1)
 	
 	#print(f'\r {running_loss/len(dataloader)}', end='', flush=True)
@@ -155,18 +158,18 @@ print('\nFinished Training')
 
 # In[22]:
 
-
+num_samples=3 # > 1
 with torch.no_grad():
 	for i, data in enumerate(dataloader):
 		inputs, labels = data
 		inputs, labels = inputs.to(device), labels.to(device)
 		outputs, hn = model(inputs)
-		print(decode("english", inputs.squeeze().tolist()))
-		print(decode("vietnamese", labels.squeeze().tolist()))
+		print(decode("english", inputs[:num_samples].squeeze().tolist()))
+		print(decode("vietnamese", labels[:num_samples].squeeze().tolist()))
 		_, outputs = outputs.detach().topk(1, dim=2)
-		print(decode("vietnamese", outputs.squeeze().tolist()))
+		print(decode("vietnamese", outputs[:num_samples].squeeze().tolist()))
 		print()
-
+		break
 
 # In[23]:
 
